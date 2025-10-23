@@ -1,0 +1,16 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongodb-bestiario
+    ports:
+      - "27017:27017"
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root12345
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+    driver: local
