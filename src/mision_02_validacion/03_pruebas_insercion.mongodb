@@ -1,0 +1,291 @@
+// MISIÓN 02 - FASE 3: PRUEBA DE INTEGRIDAD
+// Archivo: 03_pruebas_insercion.mongodb.js
+// Autor: Carlos Vicente Ñacata Calapucha
+// Fecha: Octubre 2025
+
+use("bestiario");
+
+console.log("FASE 3: Pruebas de Inserción\n");
+console.log("=".repeat(70));
+
+// ============================================
+// PRUEBA DE GUARDIANES
+// ============================================
+
+console.log("\nPRUEBA 1: Guardián VÁLIDO\n");
+
+// Inserción de guardián válido
+const guardianValido = db.guardianes.insertOne({
+  nombre: "Eldrin el Sabio",
+  rango: "Gran Maestro",
+  password_acceso: "Segura123",
+  nivel: 45,
+  inventario: [
+    { nombre_item: "Báculo de Roble", cantidad: 1 },
+    { nombre_item: "Pociones de Curación", cantidad: 5 },
+    { nombre_item: "Pergaminos Antiguos", cantidad: 12 },
+  ],
+});
+
+console.log("Guardián válido insertado correctamente");
+console.log(`   ID generado: ${guardianValido.insertedId}`);
+console.log(
+  "   Cumple con: password con mayúscula y número, rango válido, inventario completo\n"
+);
+
+// Guardar el ID para usarlo después
+const idGuardianValido = guardianValido.insertedId;
+
+console.log("=".repeat(70));
+console.log("\nPRUEBA 2: Guardián INVÁLIDO (Password sin mayúscula)\n");
+
+// Inserción de guardián inválido - Password débil
+try {
+  db.guardianes.insertOne({
+    nombre: "Novato Inexperto",
+    rango: "Aprendiz",
+    password_acceso: "simple123", // Falla: sin mayúscula
+    inventario: [{ nombre_item: "Daga Básica", cantidad: 1 }],
+  });
+  console.log("ERROR: No debería haber insertado este documento");
+} catch (error) {
+  console.log("Validación funcionó correctamente - Inserción rechazada");
+  console.log("\nMensaje de error de MongoDB:");
+  console.log(error.message);
+}
+
+/*
+MENSAJE DE ERROR ESPERADO:
+Document failed validation
+Additional information: {
+  failingDocumentId: ObjectId('...'),
+  details: {
+    operatorName: '$jsonSchema',
+    schemaRulesNotSatisfied: [
+      {
+        operatorName: 'properties',
+        propertiesNotSatisfied: [
+          {
+            propertyName: 'password_acceso',
+            description: 'Contraseña - REQUERIDA: mínimo 8 caracteres, al menos 1 mayúscula y 1 número',
+            details: [
+              {
+                operatorName: 'pattern',
+                specifiedAs: { pattern: '^(?=.*[A-Z])(?=.*\\d).{8,}$' },
+                reason: 'regular expression did not match',
+                consideredValue: 'simple123'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+*/
+
+console.log("\n" + "=".repeat(70));
+console.log("\nPRUEBA 3: Guardián INVÁLIDO (Rango no válido)\n");
+
+// Inserción de guardián inválido - Rango incorrecto
+try {
+  db.guardianes.insertOne({
+    nombre: "Guardián Confundido",
+    rango: "Legendario", // Falla: no está en el enum
+    password_acceso: "Password1",
+    inventario: [{ nombre_item: "Espada", cantidad: 1 }],
+  });
+  console.log("ERROR: No debería haber insertado este documento");
+} catch (error) {
+  console.log("Validación funcionó correctamente - Inserción rechazada");
+  console.log("\nMensaje de error de MongoDB:");
+  console.log(error.message);
+}
+
+/*
+MENSAJE DE ERROR ESPERADO:
+Document failed validation
+Additional information: {
+  failingDocumentId: ObjectId('...'),
+  details: {
+    operatorName: '$jsonSchema',
+    schemaRulesNotSatisfied: [
+      {
+        operatorName: 'properties',
+        propertiesNotSatisfied: [
+          {
+            propertyName: 'rango',
+            description: 'Rango del guardián - REQUERIDO y debe ser: Aprendiz, Maestro o Gran Maestro',
+            details: [
+              {
+                operatorName: 'enum',
+                specifiedAs: { enum: [ 'Aprendiz', 'Maestro', 'Gran Maestro' ] },
+                reason: 'value was not found in enum',
+                consideredValue: 'Legendario'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+*/
+
+console.log("\n" + "=".repeat(70));
+
+// ============================================
+// PRUEBA DE CRIATURAS
+// ============================================
+
+console.log("\nPRUEBA 4: Criatura VÁLIDA\n");
+
+// Inserción de criatura válida usando el ID del guardián
+const criaturaValida = db.criaturas.insertOne({
+  nombre: "Dragón de Esmeraldas",
+  habitat: "Montañas Místicas",
+  nivel_peligro: 8,
+  es_legendaria: true,
+  habilidades: ["vuelo", "aliento gélido", "escamas resistentes"],
+  ficha_veterinaria: {
+    salud: "Óptima",
+    ultima_revision: new Date("2025-10-15"),
+  },
+  id_guardian: idGuardianValido,
+});
+
+console.log("Criatura válida insertada correctamente");
+console.log(`   ID generado: ${criaturaValida.insertedId}`);
+console.log(`   Guardián asignado: ${idGuardianValido}`);
+console.log(
+  "   Cumple con: habilidades únicas, ficha veterinaria completa, id_guardian válido\n"
+);
+
+console.log("=".repeat(70));
+console.log("\nPRUEBA 5: Criatura INVÁLIDA (Array de habilidades vacío)\n");
+
+// Inserción de criatura inválida - Habilidades vacías
+try {
+  db.criaturas.insertOne({
+    nombre: "Slime Débil",
+    habitat: "Cueva Húmeda",
+    nivel_peligro: 2,
+    es_legendaria: false,
+    habilidades: [], // Falla: array vacío (requiere mínimo 1)
+    ficha_veterinaria: {
+      salud: "Regular",
+      ultima_revision: new Date("2025-10-20"),
+    },
+    id_guardian: idGuardianValido,
+  });
+  console.log("ERROR: No debería haber insertado este documento");
+} catch (error) {
+  console.log("Validación funcionó correctamente - Inserción rechazada");
+  console.log("\nMensaje de error de MongoDB:");
+  console.log(error.message);
+}
+
+/*
+MENSAJE DE ERROR ESPERADO:
+Document failed validation
+Additional information: {
+  failingDocumentId: ObjectId('...'),
+  details: {
+    operatorName: '$jsonSchema',
+    schemaRulesNotSatisfied: [
+      {
+        operatorName: 'properties',
+        propertiesNotSatisfied: [
+          {
+            propertyName: 'habilidades',
+            description: 'Array de habilidades - REQUERIDO, mínimo 1 elemento, valores únicos tipo string',
+            details: [
+              {
+                operatorName: 'minItems',
+                specifiedAs: { minItems: 1 },
+                reason: 'array did not match specified length',
+                consideredValue: []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+*/
+
+console.log("\n" + "=".repeat(70));
+console.log("\nPRUEBA 6: Criatura INVÁLIDA (Ficha veterinaria incompleta)\n");
+
+// Inserción de criatura inválida - Sin campo salud en ficha_veterinaria
+try {
+  db.criaturas.insertOne({
+    nombre: "Quimera Enferma",
+    habitat: "Valle Prohibido",
+    nivel_peligro: 7,
+    es_legendaria: true,
+    habilidades: ["múltiples cabezas", "veneno"],
+    ficha_veterinaria: {
+      // Falla: falta el campo "salud" (requerido)
+      ultima_revision: new Date("2025-09-30"),
+    },
+    id_guardian: idGuardianValido,
+  });
+  console.log("ERROR: No debería haber insertado este documento");
+} catch (error) {
+  console.log("Validación funcionó correctamente - Inserción rechazada");
+  console.log("\nMensaje de error de MongoDB:");
+  console.log(error.message);
+}
+
+/*
+MENSAJE DE ERROR ESPERADO:
+Document failed validation
+Additional information: {
+  failingDocumentId: ObjectId('...'),
+  details: {
+    operatorName: '$jsonSchema',
+    schemaRulesNotSatisfied: [
+      {
+        operatorName: 'properties',
+        propertiesNotSatisfied: [
+          {
+            propertyName: 'ficha_veterinaria',
+            description: 'Relación 1-a-1 Embebida - Información veterinaria de la criatura',
+            details: [
+              {
+                operatorName: 'properties',
+                propertiesNotSatisfied: [
+                  {
+                    propertyName: 'salud',
+                    description: "Estado de salud - REQUERIDO: 'Óptima', 'Regular' o 'Crítica'",
+                    details: [
+                      {
+                        operatorName: 'required',
+                        specifiedAs: { required: [ 'salud', 'ultima_revision' ] },
+                        missingProperties: [ 'salud' ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+*/
+
+console.log("\n" + "=".repeat(70));
+console.log("\nRESUMEN DE PRUEBAS\n");
+console.log("Guardián válido: INSERTADO");
+console.log("Guardián con password débil: RECHAZADO (validación correcta)");
+console.log("Guardián con rango inválido: RECHAZADO (validación correcta)");
+console.log("Criatura válida: INSERTADA");
+console.log("Criatura sin habilidades: RECHAZADA (validación correcta)");
+console.log("Criatura con ficha incompleta: RECHAZADA (validación correcta)");
+console.log("\nTodas las validaciones funcionan correctamente!");
+console.log("=".repeat(70) + "\n");

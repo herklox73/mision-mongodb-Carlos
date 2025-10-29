@@ -1,0 +1,66 @@
+
+use("bestiario");
+
+
+
+db.criaturas.drop();
+
+
+db.createCollection("criaturas", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["nombre", "habitat", "nivel_peligro", "es_legendaria", "habilidades", "ficha_veterinaria", "id_guardian"],
+      properties: {
+        nombre: {
+          bsonType: "string",
+          description: "Nombre de la criatura - REQUERIDO y debe ser string"
+        },
+        habitat: {
+          bsonType: "string",
+          description: "Hábitat donde vive la criatura - REQUERIDO"
+        },
+        nivel_peligro: {
+          bsonType: "number",
+          minimum: 1,
+          maximum: 10,
+          description: "Nivel de peligro - REQUERIDO, número entre 1 y 10"
+        },
+        es_legendaria: {
+          bsonType: "bool",
+          description: "Indica si la criatura es legendaria - REQUERIDO, debe ser boolean"
+        },
+        habilidades: {
+          bsonType: "array",
+          minItems: 1,
+          uniqueItems: true,
+          items: {
+            bsonType: "string"
+          },
+          description: "Array de habilidades - REQUERIDO, mínimo 1 elemento, valores únicos tipo string"
+        },
+        ficha_veterinaria: {
+          bsonType: "object",
+          required: ["salud", "ultima_revision"],
+          description: "Relación 1-a-1 Embebida - Información veterinaria de la criatura",
+          properties: {
+            salud: {
+              bsonType: "string",
+              enum: ["Óptima", "Regular", "Crítica"],
+              description: "Estado de salud - REQUERIDO: 'Óptima', 'Regular' o 'Crítica'"
+            },
+            ultima_revision: {
+              bsonType: "date",
+              description: "Fecha de última revisión veterinaria - REQUERIDA, tipo date"
+            }
+          }
+        },
+        id_guardian: {
+          bsonType: "objectId",
+          description: "Relación 1-a-Muchos Referenciada - ID del guardián responsable (referencia a colección guardianes)"
+        }
+      }
+    }
+  }
+});
+
